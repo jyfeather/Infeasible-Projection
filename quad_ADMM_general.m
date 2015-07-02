@@ -19,6 +19,9 @@ function [z, history] = quad_ADMM_general(P, q, r, A, b, rho, alpha)
 % alpha is the over-relaxation parameter (typical values for alpha are
 % between 1.0 and 1.8).
 %
+% refer to
+%   https://github.com/scalanlp/breeze/blob/master/math/src/main/scala/breeze/optimize/proximal/QuadraticMinimizer.scala
+%
 
 t_start = tic;
 
@@ -41,11 +44,16 @@ end
 for k = 1:MAX_ITER
 
     % x-update, most time consuming step
-%     if k == 1 % caching the Cholesky factorization
-%         R = chol([P + rho*eye(n), A'; A, zeros(p,p)]);
-%     end
-%     tmp = R \ (R' \ [(rho*(z - u) - q); b]);
-    tmp = [P + rho*eye(n), A'; A, zeros(p,p)] \ [(rho*(z - u) - q); b];
+    if k == 1 % caching the LU factorization for quasi definite matrix
+        [L,U] = lu([P + rho*eye(n), A'; A, zeros(p,p)]);
+        
+    end
+    % LDL' solver
+    tmp = U \ (L \ [(rho*(z - u) - q); b]);
+    
+    
+    
+%    tmp = [P + rho*eye(n), A'; A, zeros(p,p)] \ [(rho*(z - u) - q); b];
     x = tmp(1:n);
 
     % z-update with relaxation
